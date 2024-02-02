@@ -28,6 +28,7 @@ from models.Entity import Entity as EntityModel
 from models.User import User as UserModel
 from models.UserRoleMapping import UserRoleMapping as UserRoleMappingModel
 
+
 from routes import User
 
 with app.app_context():

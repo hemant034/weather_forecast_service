@@ -2,6 +2,7 @@ from flask import Flask, session, request, make_response, redirect, url_for, jso
 from flask_session import Session
 from app import app, db, secret_key, getResponseHeaders
 from models.HttpResponse import HttpResponse
+from models.UserCount import UserVisit
 import json
 from services import User as user_service
 import jwt
@@ -11,6 +12,19 @@ app.config['SESSION_TYPE'] = 'filesystem'  # You can use other session types as 
 app.config['SECRET_KEY'] = secret_key
 
 Session(app)
+
+def increment_visit_counter(username):
+    # Check if the user exists in the user_visits table
+    user_visit = UserVisit.query.get(username)
+    if user_visit:
+        # If the user exists, increment the visit counter
+        user_visit.visit_counter += 1
+    else:
+        # If the user doesn't exist, create a new record with the username
+        new_user_visit = UserVisit(username=username, visit_counter=1)
+        db.session.add(new_user_visit)
+
+    db.session.commit()
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -25,6 +39,7 @@ def login():
                 session['user_id'] = data.get('user_name')
                 access_token = jwt.encode(payload=data, key=secret_key, algorithm='HS256')
                 data['access_token'] = access_token
+                increment_visit_counter(user_name)
         else:
             status, message, data = (400, 'Bad request', None)
 
