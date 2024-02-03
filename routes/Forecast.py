@@ -7,7 +7,7 @@ from models.CountriesForecastCount import CountryVisit
 from config import *
 import json
 import requests
-import os
+
 
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SECRET_KEY'] = secret_key

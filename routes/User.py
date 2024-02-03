@@ -28,24 +28,25 @@ def increment_visit_counter(username):
 @app.route('/login', methods=['POST'])
 def login():
     try:
-        # Cleanup stale session if present.
-        session.pop('user_id', None)
-
-        payload: dict = request.json
-        user_name: str = payload.get('user_name', None)
-        password: str = payload.get('password', None)
-        if user_name and password:
-            status, message, data = user_service.validate_user_credentials(user_name=user_name, password=password)
-            if status == 200:
-                # Store user session info.
-                session['user_id'] = data.get('user_name')
-                access_token = jwt.encode(payload=data, key=secret_key, algorithm='HS256')
-                data['access_token'] = access_token
-
-                # Increment the user visit counter for analytics.
-                increment_visit_counter(user_name)
+        if 'user_id' in session:
+            # User is already logged in, handle accordingly
+            status, message, data = (400, 'Bad request', {'error': 'User is already logged in'})
         else:
-            status, message, data = (400, 'Bad request', None)
+            payload: dict = request.json
+            user_name: str = payload.get('user_name', None)
+            password: str = payload.get('password', None)
+            if user_name and password:
+                status, message, data = user_service.validate_user_credentials(user_name=user_name, password=password)
+                if status == 200:
+                    # Store user session info.
+                    session['user_id'] = data.get('user_name')
+                    access_token = jwt.encode(payload=data, key=secret_key, algorithm='HS256')
+                    data['access_token'] = access_token
+
+                    # Increment the user visit counter for analytics.
+                    increment_visit_counter(user_name)
+            else:
+                status, message, data = (400, 'Bad request', None)
 
         response = HttpResponse(message=message, status=status, data=data)
     except Exception as e:
@@ -57,8 +58,15 @@ def login():
 @app.route('/logout')
 def logout():
     # Clear user user session for logging out.
-    session.pop('user_id', None)
-    return {'msg' : 'Logged out!'} 
+    if 'user_id' not in session:
+        status, message, data = (400, 'Bad request', {'error': 'User already logged out.'})
+    else:
+        user_id = session.pop('user_id', None)
+        status, message, data = (200, 'Logged out successfully.', {'user_id': user_id})
+    
+    response = HttpResponse(message=message, status=status, data=data)
+
+    return make_response(json.dumps(response.__dict__), response.status, getResponseHeaders())
 
 
 @app.route('/current_user')
