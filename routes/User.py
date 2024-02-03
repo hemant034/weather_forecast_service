@@ -6,7 +6,6 @@ from models.UserCount import UserVisit
 import json
 from services import User as user_service
 import jwt
-import pdb
 
 app.config['SESSION_TYPE'] = 'filesystem'  # You can use other session types as well
 app.config['SECRET_KEY'] = secret_key

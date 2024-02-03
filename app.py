@@ -6,16 +6,12 @@ from sqlalchemy import MetaData
 from config import *
 from utils import *
 
-from services.country_service import country_bp
-from services.forecast_service import forecast_bp
 
 import json
 import csv
 
 app = Flask(__name__)
 
-app.register_blueprint(country_bp, url_prefix='/countries')
-app.register_blueprint(forecast_bp, url_prefix='/forecasts')
 
 app.config.update(app_config_dict)
 CORS(app)
@@ -23,20 +19,41 @@ CORS(app)
 db = SQLAlchemy(app)
 db.init_app(app)
 
+role_names: [str] = ['SUPERADMIN', 'ADMIN', 'USER']
+
 from models.Role import Role as RoleModel
 from models.Entity import Entity as EntityModel
 from models.User import User as UserModel
 from models.UserRoleMapping import UserRoleMapping as UserRoleMappingModel
+from models.CitiesForecastCount import CityVisit
+from models.CountriesForecastCount import CountryVisit
+from models.UserCount import UserVisit
+from models.UserForecastCount import UserForecastVisit
 
 
-from routes import User
+from routes import User, Country, Forecast
+
+def clear_all_data():
+    # Get all tables in the database
+    tables = db.metadata.tables.keys()
+
+    # Iterate through tables and delete all data
+    for table_name in tables:
+        table = db.metadata.tables[table_name]
+        db.session.execute(table.delete())
+
+    # Commit the changes
+    db.session.commit()
 
 with app.app_context():
     db.create_all()
 
 def add_row_to_db(username, password, email, first_name, last_name):
-    import pdb
     try:
+        existing_user = UserModel.query.filter_by(user_name=username).first()
+        if existing_user:
+            return
+        
         user_password_enc = encrypt(secret_key=secret_key, plain_text=password)
         user_obj = UserModel(user_name=username, user_email=email,
                                 password=user_password_enc, first_name=first_name, last_name=last_name)
@@ -57,7 +74,7 @@ def insert_users_to_db():
         csv_reader = csv.DictReader(csvfile)
         i = 0
         for row in csv_reader:
-            if i > 0:
+            if i >= 0:
                 username, password, full_name = row['username'], row['password'], row['full_name']
                 first_name, last_name = full_name.split(" ", maxsplit=2)
                 email = f'{username}@dummy.com'
@@ -65,40 +82,65 @@ def insert_users_to_db():
                 add_row_to_db(username, password, email, first_name, last_name)
             i+=1
 
+    print('Users added.')
 
-role_names: [str] = ['SUPERADMIN', 'ADMIN', 'USER']
-print('Adding Roles')
-try:
-    roles = [RoleModel(role_name=role_name) for role_name in role_names]
-    db.session.bulk_save_objects(roles)
-    db.session.commit()
-except:
+
+def add_roles():
+    print('Adding Roles')
+    try:
+        for role_name in role_names:
+            existing_role = RoleModel.query.filter_by(role_name=role_name).first()
+            if existing_role:
+                print(f"Role '{role_name}' already exists in the database.")
+                continue
+
+            new_role = RoleModel(role_name=role_name)
+            db.session.add(new_role)
+        
+        db.session.commit()
+        print('Roles Added!')
+    except Exception as e:
+        print(f"Error adding roles: {e}")
+
+
+def add_super_admin():
+    print('Adding Super Admin')
+    try:
+        super_admin_username = 'super_admin'
+        existing_admin = UserModel.query.filter_by(user_name=super_admin_username).first()
+        if existing_admin:
+            print(f"Super Admin '{super_admin_username}' already exists in the database.")
+            return
+
+        super_admin_password_enc = encrypt(secret_key=secret_key, plain_text=super_admin_password)
+        super_admin_user = UserModel(user_name=super_admin_username, user_email='super_admin@nodomain.com',
+                                     password=super_admin_password_enc, first_name='Super Admin', last_name='User')
+        db.session.add(super_admin_user)
+        db.session.commit()
+
+        super_admin_role = RoleModel.get_role_by_name(role_name=role_names[0])
+        super_admin_user_role_mapping = UserRoleMappingModel(user_name=super_admin_user.user_name,
+                                                              role_id=super_admin_role.role_id)
+        db.session.add(super_admin_user_role_mapping)
+        db.session.commit()
+
+        print(f"Super Admin '{super_admin_username}' added to the database.")
+    except Exception as e:
+        print(f"Error adding Super Admin: {e}")
+
+
+def add_admin_users():
     pass
-print('Roles Added!')
-
-print('Adding Super Admin')
-try:
-    super_admin_password_enc = encrypt(secret_key=secret_key, plain_text=super_admin_password)
-    super_admin_user = UserModel(user_name='super_admin', user_email='super_admin@nodomain.com',
-                            password=super_admin_password_enc, first_name='Super Admin', last_name='User')
-    db.session.add(super_admin_user)
-    db.session.commit()
-
-    super_admin_role: RoleModel = RoleModel.get_role_by_name(role_name=role_names[0])
-    super_admin_user_role_mapping = UserRoleMappingModel(user_name=super_admin_user.user_name,
-                                                    role_id=super_admin_role.role_id)
-    db.session.add(super_admin_user_role_mapping)
-    db.session.commit()
-except Exception as e:
-    pass
 
 
-
-print('Super Admin Added')
-
-insert_users_to_db()
-print('Users added.')
-
+def init_db(cleanup_db=False):
+    if cleanup_db:
+        clear_all_data()
+    add_roles()
+    add_super_admin()
+    insert_users_to_db()
+    
+init_db(True)
 
 @app.route('/')
 def ping():  # put application's code here
