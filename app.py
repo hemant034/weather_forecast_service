@@ -2,17 +2,12 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
-
 from config import *
 from utils import *
-
-
 import json
 import csv
 
 app = Flask(__name__)
-
-
 app.config.update(app_config_dict)
 CORS(app)
 

@@ -1,6 +1,6 @@
 Flask==2.2.0
 Flask-Cors==3.0.8
-Flask-SQLAlchemy==2.5.1  # Adjusted the capitalization
+Flask-SQLAlchemy==2.5.1
 pycryptodome==3.11.0
 SQLAlchemy==1.4.26
 Werkzeug==2.2.2

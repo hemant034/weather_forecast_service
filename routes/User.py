@@ -12,7 +12,7 @@ app.config['SECRET_KEY'] = secret_key
 
 Session(app)
 
-def increment_visit_counter(username):
+def increment_visit_counter(username: str):
     # Check if the user exists in the user_visits table
     user_visit = UserVisit.query.get(username)
     if user_visit:
@@ -65,7 +65,6 @@ def logout():
         status, message, data = (200, 'Logged out successfully.', {'user_id': user_id})
     
     response = HttpResponse(message=message, status=status, data=data)
-
     return make_response(json.dumps(response.__dict__), response.status, getResponseHeaders())
 
 
@@ -75,6 +74,9 @@ def current_user():
     if user_id:
         # Retrieve the current user information from the database based on user_id
         user_info = session['user_id']
-        return jsonify(user_info)
+        message, data, status = 'User is logged in', {'username' : user_info}, 200
     else:
-        return jsonify({'message': 'User not logged in'}), 401
+        message, data, status = 'User is not logged in',{'username': None}, 401
+    
+    response = HttpResponse(message=message, status=status, data=data)
+    return make_response(json.dumps(response.__dict__), response.status, getResponseHeaders())

@@ -12,7 +12,7 @@ app.config['SECRET_KEY'] = secret_key
 
 Session(app)
 
-def increment_countries_visit_counter(country):
+def increment_countries_visit_counter(country: str):
     # Check if the user exists in the user_visits table
     country_visit = CountryVisit.query.get(country)
     if country_visit:
@@ -35,8 +35,9 @@ def list_countries():
     except FileNotFoundError:
         return jsonify({"error": "Country data file not found"}), 500
     
-@app.route('/cities/<country_name>', methods=['GET'])
+@app.route('/cities', methods=['GET'])
 def list_cities(country_name):
+    country_name: str = request.args.get('country_name')
     city_list = []
     try:
         with open('data/country_data.json', 'r', encoding='utf-8') as file:
