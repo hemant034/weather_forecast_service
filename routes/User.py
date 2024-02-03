@@ -28,6 +28,8 @@ def increment_visit_counter(username):
 @app.route('/login', methods=['POST'])
 def login():
     try:
+        session.pop('user_id', None)
+
         payload: dict = request.json
         user_name: str = payload.get('user_name', None)
         password: str = payload.get('password', None)

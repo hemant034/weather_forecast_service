@@ -140,7 +140,7 @@ def init_db(cleanup_db=False):
     add_super_admin()
     insert_users_to_db()
     
-init_db(True)
+init_db()
 
 @app.route('/')
 def ping():  # put application's code here

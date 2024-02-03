@@ -1,16 +1,14 @@
-from flask import Flask, session, request, make_response, redirect, url_for, jsonify
+from flask import Flask, session, request, jsonify
 from flask_session import Session
-from app import app, db, secret_key, getResponseHeaders
-from models.HttpResponse import HttpResponse
+from app import app, db, secret_key
 from models.UserForecastCount import UserForecastVisit
 from models.CitiesForecastCount import CityVisit
 from models.CountriesForecastCount import CountryVisit
 import json
 import requests
-from services import User as user_service
-import jwt
+import os
 
-app.config['SESSION_TYPE'] = 'filesystem'  # You can use other session types as well
+app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SECRET_KEY'] = secret_key
 
 country_names = set()
@@ -65,9 +63,11 @@ def increment_countries_forecast_counter(country_name):
 
     db.session.commit()
 
-@app.route('/forecast/<place_name>/<days>', methods=['GET'])
-def forecast_weather(place_name, days):
-    api_key = "e1131bba0569404fa25141702240102"
+@app.route('/forecast', methods=['GET'])
+def forecast_weather():
+    place_name: str = request.args.get('place_name')
+    days: int = request.args.get('days')
+    api_key = os.environ.get('WEATHER_API_KEY')
     url = f'http://api.weatherapi.com/v1/forecast.json?key={api_key}&q={place_name}&days={days}'
 
     try:
@@ -77,19 +77,20 @@ def forecast_weather(place_name, days):
         json_data = response.json()
         if place_name in country_names:
             increment_countries_forecast_counter(place_name)
-        else:
+        elif place_name in city_country_map:
             increment_cities_forecast_counter(place_name)
             increment_countries_forecast_counter(city_country_map[place_name])
         increment_forecast_user_counter(user_id)
         return jsonify(json_data)
     except requests.exceptions.RequestException as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Please enter valid place name."}), 500
     
 
-@app.route('/forecast/top_users/<int:n>', methods=['GET'])
-def top_users(n):
+@app.route('/forecast/top_users', methods=['GET'])
+def top_users():
     try:
         # Fetch the top n users based on forecast visit counter
+        n: int = request.args.get('n', 1)
         top_users = (
             db.session.query(UserForecastVisit)
             .order_by(UserForecastVisit.forecast_visit_counter.desc())
@@ -108,10 +109,11 @@ def top_users(n):
         return jsonify({"error": str(e)}), 500
     
 
-@app.route('/forecast/top_countries/<int:n>', methods=['GET'])
-def top_countries(n):
+@app.route('/forecast/top_countries', methods=['GET'])
+def top_countries():
     try:
         # Fetch the top n countries based on country visit counter
+        n: int = request.args.get('n', 1)
         top_countries = (
             db.session.query(CountryVisit)
             .order_by(CountryVisit.country_visit_counter.desc())
@@ -130,9 +132,10 @@ def top_countries(n):
         return jsonify({"error": str(e)}), 500
     
 
-@app.route('/forecast/top_cities/<int:n>', methods=['GET'])
-def top_cities(n):
+@app.route('/forecast/top_cities', methods=['GET'])
+def top_cities():
     try:
+        n: int = request.args.get('n', 1)
         # Fetch the top n cities based on city visit counter
         top_cities = (
             db.session.query(CityVisit)
