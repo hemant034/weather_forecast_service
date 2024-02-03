@@ -4,6 +4,7 @@ from app import app, db, secret_key
 from models.UserForecastCount import UserForecastVisit
 from models.CitiesForecastCount import CityVisit
 from models.CountriesForecastCount import CountryVisit
+from config import *
 import json
 import requests
 import os
@@ -67,7 +68,7 @@ def increment_countries_forecast_counter(country_name):
 def forecast_weather():
     place_name: str = request.args.get('place_name')
     days: int = request.args.get('days')
-    api_key = os.environ.get('WEATHER_API_KEY')
+    api_key = weather_api_key
     url = f'http://api.weatherapi.com/v1/forecast.json?key={api_key}&q={place_name}&days={days}'
 
     try:

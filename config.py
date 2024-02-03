@@ -6,5 +6,6 @@ app_config_dict = {
     'SQLALCHEMY_TRACK_MODIFICATIONS': True
 }
 
-secret_key = os.environ.get('secret_key', 'FT8H9ylGnZcfhCI5SX7Q2VL46IZd1vL1')
-super_admin_password = os.environ.get('super_admin_password', 'ouC2gAbhsO')
+secret_key = os.environ.get('secret_key', 'XYZ')
+super_admin_password = os.environ.get('super_admin_password', 'ABC')
+weather_api_key = os.environ.get('WEATHER_API_KEY', 'your_key')

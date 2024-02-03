@@ -28,6 +28,7 @@ def increment_visit_counter(username):
 @app.route('/login', methods=['POST'])
 def login():
     try:
+        # Cleanup stale session if present.
         session.pop('user_id', None)
 
         payload: dict = request.json
@@ -36,10 +37,12 @@ def login():
         if user_name and password:
             status, message, data = user_service.validate_user_credentials(user_name=user_name, password=password)
             if status == 200:
-                # Store user information in the session
+                # Store user session info.
                 session['user_id'] = data.get('user_name')
                 access_token = jwt.encode(payload=data, key=secret_key, algorithm='HS256')
                 data['access_token'] = access_token
+
+                # Increment the user visit counter for analytics.
                 increment_visit_counter(user_name)
         else:
             status, message, data = (400, 'Bad request', None)
@@ -53,16 +56,16 @@ def login():
 
 @app.route('/logout')
 def logout():
-    # Clear user information from the session
+    # Clear user user session for logging out.
     session.pop('user_id', None)
-    return {'msg' : 'Logged out!'}  # Redirect to home page or any other desired route
+    return {'msg' : 'Logged out!'} 
 
 
 @app.route('/current_user')
 def current_user():
     user_id = session.get('user_id')
     if user_id:
-        # Retrieve user information from the database based on user_id
+        # Retrieve the current user information from the database based on user_id
         user_info = session['user_id']
         return jsonify(user_info)
     else:
