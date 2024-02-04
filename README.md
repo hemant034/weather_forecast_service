@@ -8,7 +8,7 @@ To set this application in your local machine, follow the instructures
 1. Clone the repository
 
 ```
-git clone https://github.com/hemant034/cloud_solutions_admin_service
+git clone https://github.com/hemant034/weather_forecast_service
 ```
 
 2. Create a new virtual environment
