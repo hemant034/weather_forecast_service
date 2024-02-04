@@ -17,6 +17,7 @@ app.config['SECRET_KEY'] = secret_key
 country_names = set()
 city_country_map = dict()
 
+# Fetch the countries and cities from a file.
 try:
     with open('data/country_data.json', 'r', encoding='utf-8') as file:
         logger.info("Fetching data countries data.")
@@ -29,6 +30,9 @@ except FileNotFoundError as e:
 Session(app)
 
 def increment_forecast_user_counter(username):
+    """
+    FUnction to increment user forecast counter in db.
+    """
     # Check if the user exists in the user_visits table
     user_visit = UserForecastVisit.query.get(username)
     if user_visit:
@@ -42,6 +46,9 @@ def increment_forecast_user_counter(username):
     db.session.commit()
 
 def increment_cities_forecast_counter(city_name):
+    """
+    Function to increment cities forecast counter in db.
+    """
     # Check if the user exists in the user_visits table
     city_visit = CityVisit.query.get(city_name)
     if city_visit:
@@ -55,6 +62,9 @@ def increment_cities_forecast_counter(city_name):
     db.session.commit()
 
 def increment_countries_forecast_counter(country_name):
+    """
+    FUnction to increment countries forecast counter in db.
+    """
     # Check if the user exists in the user_visits table
     country_visit = CountryVisit.query.get(country_name)
     if country_visit:
@@ -69,6 +79,9 @@ def increment_countries_forecast_counter(country_name):
 
 @app.route('/forecast', methods=['GET'])
 def forecast_weather():
+    """
+    Endpoint to get forecast for given city or country for provided no of days.
+    """
     place_name: str = request.args.get('place_name')
     days: int = request.args.get('days')
     api_key = weather_api_key
@@ -101,6 +114,9 @@ def forecast_weather():
 
 @app.route('/forecast/top_users', methods=['GET'])
 def top_users():
+    """
+    Endpoint to get top N users using the forecast appliaction.
+    """
     try:
         # Fetch the top n users based on forecast visit counter
         n: int = request.args.get('n', 1)
@@ -133,6 +149,9 @@ def top_users():
 
 @app.route('/forecast/top_countries', methods=['GET'])
 def top_countries():
+    """
+    Endpoint to get top N countries for which forecast was requested.
+    """
     try:
         # Fetch the top n countries based on country visit counter
         n: int = request.args.get('n', 1)
@@ -165,6 +184,9 @@ def top_countries():
 
 @app.route('/forecast/top_cities', methods=['GET'])
 def top_cities():
+    """
+    Endpoint to get top N cities for which forecast was requested.
+    """
     try:
         n: int = request.args.get('n', 1)
         logger.info(f'Fetching top {n} cities forecasted.')

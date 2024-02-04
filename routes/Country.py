@@ -8,12 +8,15 @@ from logger import logger
 import json
 from services import User as user_service
 
-app.config['SESSION_TYPE'] = 'filesystem'  # You can use other session types as well
+app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SECRET_KEY'] = secret_key
 
 Session(app)
 
 def increment_countries_visit_counter(country: str):
+    """
+    Utility function to increment countries visited counter in database.
+    """
     # Check if the user exists in the user_visits table
     country_visit = CountryVisit.query.get(country)
     if country_visit:
@@ -28,6 +31,9 @@ def increment_countries_visit_counter(country: str):
 
 @app.route('/countries', methods=['GET'])
 def list_countries():
+    """
+    Endpoint to fetch list of countries.
+    """
     logger.info("Fetching list of countries.")
     try:
         with open('data/country_data.json', 'r', encoding='utf-8') as file:
@@ -49,6 +55,9 @@ def list_countries():
     
 @app.route('/cities', methods=['GET'])
 def list_cities():
+    """
+    Endpoint to fetch list of cities for a given country.
+    """
     country_name: str = request.args.get('country_name')
     city_list = []
     logger.info(f'Fetching list of cities for {country_name}.')

@@ -14,6 +14,9 @@ app.config['SECRET_KEY'] = secret_key
 Session(app)
 
 def increment_visit_counter(username: str):
+    """
+    Function to increment user login counter.
+    """
     # Check if the user exists in the user_visits table
     user_visit = UserVisit.query.get(username)
     if user_visit:
@@ -28,6 +31,9 @@ def increment_visit_counter(username: str):
 
 @app.route('/login', methods=['POST'])
 def login():
+    """
+    Endpoint to login to the weather forecast application.
+    """
     try:
         if 'user_id' in session:
             # User is already logged in, handle accordingly
@@ -62,6 +68,9 @@ def login():
 
 @app.route('/logout')
 def logout():
+    """
+    Endpoint to logout from the weather forecast application.
+    """
     # Clear user user session for logging out.
     if 'user_id' not in session:
         logger.info("User has already logged out.")
@@ -77,6 +86,9 @@ def logout():
 
 @app.route('/current_user')
 def current_user():
+    """
+    Endpoint to get the current user logged in to the weather forecast application.
+    """
     user_id = session.get('user_id')
     if user_id:
         # Retrieve the current user information from the database based on user_id

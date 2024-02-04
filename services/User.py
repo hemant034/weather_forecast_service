@@ -3,6 +3,9 @@ from models.User import User
 
 
 def validate_user_credentials(user_name: str, password: str) -> (int, str, dict):
+    """
+    Function to validate the user credentials.
+    """
     status = 401
     message = 'Incorrect username or password'
     user = None
