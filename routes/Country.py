@@ -48,7 +48,7 @@ def list_countries():
     
     
 @app.route('/cities', methods=['GET'])
-def list_cities(country_name):
+def list_cities():
     country_name: str = request.args.get('country_name')
     city_list = []
     logger.info(f'Fetching list of cities for {country_name}.')
