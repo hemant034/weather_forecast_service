@@ -35,7 +35,7 @@ def list_countries():
             country_names = list(set([city_item['country'] for city_item in cities_data]))
             message = "Fetched list of countries successfully."
             status = 200
-            data = jsonify(sorted(country_names))
+            data = sorted(country_names)
             logger.info(message)
     except FileNotFoundError as e:
         message = "Faild to fetch list of countries."
@@ -62,7 +62,7 @@ def list_cities(country_name):
                 return jsonify({"error": "Country not found"}), 404
             message = f'Fetched list of cities for {country_name} successfully.'
             status = 200
-            data = jsonify(sorted(city_list))
+            data = sorted(city_list)
             logger.info(message)
     except FileNotFoundError as e:
         message = f'Failed to fetch cities for {country_name}'
