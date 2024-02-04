@@ -36,3 +36,9 @@ FLASK_RUN_PORT=5900 flask run
 ```
 
 6. Invoke `http://127.0.0.1:5900/` on chrome to verify the launch.
+
+7. RUn the unit tests.
+
+```
+python -m unittest discover -v tests
+```
