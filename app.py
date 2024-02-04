@@ -31,6 +31,9 @@ from models.UserForecastCount import UserForecastVisit
 from routes import User, Country, Forecast
 
 def clear_all_data():
+    """
+    Function to clear the database tables.
+    """
     # Get all tables in the database
     logger.info("Clearing database tables.")
     tables = db.metadata.tables.keys()
@@ -48,6 +51,9 @@ with app.app_context():
     db.create_all()
 
 def add_row_to_db(username, password, email, first_name, last_name):
+    """
+    Function to insert a user row details in db.
+    """
     try:
         existing_user = UserModel.query.filter_by(user_name=username).first()
         if existing_user:
@@ -67,6 +73,9 @@ def add_row_to_db(username, password, email, first_name, last_name):
         print(e)
 
 def insert_users_to_db():
+    """
+    Function to insert all users in db.
+    """
     csv_file_path = 'data/username.csv'
     with open(csv_file_path, newline='') as csvfile:
         # Create a CSV DictReader object
@@ -86,6 +95,9 @@ def insert_users_to_db():
 
 
 def add_roles():
+    """
+    Function to add roles to the db.
+    """
     logger.info("Adding roles to the database.")
     try:
         for role_name in role_names:
@@ -105,6 +117,9 @@ def add_roles():
 
 
 def add_super_admin():
+    """
+    Function to add super admin to db.
+    """
     logger.info("Adding super admin role.")
     try:
         super_admin_username = 'super_admin'
@@ -132,10 +147,17 @@ def add_super_admin():
 
 
 def add_admin_users():
+    """
+    Function to add admin users in db.
+    """
+    # TODO: Add admin roles.
     pass
 
 
 def init_db(cleanup_db=False):
+    """
+    Function to initialise the db.
+    """
     logger.info("Adding roles, super admin role and users to database.")
     if cleanup_db:
         clear_all_data()
@@ -146,7 +168,7 @@ def init_db(cleanup_db=False):
 init_db()
 
 @app.route('/')
-def ping():  # put application's code here
+def ping():
     return 'Welcome to weather forecast application.'
 
 
