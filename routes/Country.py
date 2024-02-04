@@ -4,6 +4,7 @@ from app import app, db, secret_key, getResponseHeaders
 from models.HttpResponse import HttpResponse
 from models.UserCount import UserVisit
 from models.CountriesForecastCount import CountryVisit
+from logger import logger
 import json
 from services import User as user_service
 
@@ -27,18 +28,30 @@ def increment_countries_visit_counter(country: str):
 
 @app.route('/countries', methods=['GET'])
 def list_countries():
+    logger.info("Fetching list of countries.")
     try:
         with open('data/country_data.json', 'r', encoding='utf-8') as file:
             cities_data = json.load(file)
             country_names = list(set([city_item['country'] for city_item in cities_data]))
-            return jsonify(sorted(country_names))
-    except FileNotFoundError:
-        return jsonify({"error": "Country data file not found"}), 500
+            message = "Fetched list of countries successfully."
+            status = 200
+            data = jsonify(sorted(country_names))
+            logger.info(message)
+    except FileNotFoundError as e:
+        message = "Faild to fetch list of countries."
+        status = 500
+        data = {'error': str(e)}
+        logger.error(f'{message} : str(e)')
+
+    response = HttpResponse(message=message, status=status, data=data)
+    return make_response(json.dumps(response.__dict__), response.status, getResponseHeaders())
+    
     
 @app.route('/cities', methods=['GET'])
 def list_cities(country_name):
     country_name: str = request.args.get('country_name')
     city_list = []
+    logger.info(f'Fetching list of cities for {country_name}.')
     try:
         with open('data/country_data.json', 'r', encoding='utf-8') as file:
             cities_data = json.load(file)
@@ -47,6 +60,15 @@ def list_cities(country_name):
                     city_list.append(city_data['name'])
             if not city_list:
                 return jsonify({"error": "Country not found"}), 404
-            return jsonify(sorted(city_list))
-    except FileNotFoundError:
-        return jsonify({"error": "Country data file not found"}), 500
+            message = f'Fetched list of cities for {country_name} successfully.'
+            status = 200
+            data = jsonify(sorted(city_list))
+            logger.info(message)
+    except FileNotFoundError as e:
+        message = f'Failed to fetch cities for {country_name}'
+        status = 500
+        data = {'error' : str(e)}
+        logger.error(f'{message} : str(e)')
+    
+    response = HttpResponse(message=message, status=status, data=data)
+    return make_response(json.dumps(response.__dict__), response.status, getResponseHeaders())

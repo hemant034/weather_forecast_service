@@ -5,6 +5,7 @@ from models.HttpResponse import HttpResponse
 from models.UserCount import UserVisit
 import json
 from services import User as user_service
+from logger import logger
 import jwt
 
 app.config['SESSION_TYPE'] = 'filesystem'
@@ -30,6 +31,7 @@ def login():
     try:
         if 'user_id' in session:
             # User is already logged in, handle accordingly
+            logger.info("User is already logged in.")
             status, message, data = (400, 'Bad request', {'error': 'User is already logged in'})
         else:
             payload: dict = request.json
@@ -45,12 +47,15 @@ def login():
 
                     # Increment the user visit counter for analytics.
                     increment_visit_counter(user_name)
+                    logger.info(f"User {user_name} logged in successfully.")
             else:
                 status, message, data = (400, 'Bad request', None)
-
+                logger.error(f'Error logging in the user : {message}')
+                
         response = HttpResponse(message=message, status=status, data=data)
     except Exception as e:
         exception_str = str(e)
+        logger.error(f"Failed to login the user : {exception_str}")
         response = HttpResponse(message='Exception Occurred - ' + exception_str, status=500)
 
     return make_response(json.dumps(response.__dict__), response.status, getResponseHeaders())
@@ -59,8 +64,10 @@ def login():
 def logout():
     # Clear user user session for logging out.
     if 'user_id' not in session:
+        logger.info("User has already logged out.")
         status, message, data = (400, 'Bad request', {'error': 'User already logged out.'})
     else:
+        logger.info("User logged out successfully.")
         user_id = session.pop('user_id', None)
         status, message, data = (200, 'Logged out successfully.', {'user_id': user_id})
     
@@ -75,8 +82,10 @@ def current_user():
         # Retrieve the current user information from the database based on user_id
         user_info = session['user_id']
         message, data, status = 'User is logged in', {'username' : user_info}, 200
+        logger.info(f'User {user_info} is logged in.')
     else:
         message, data, status = 'User is not logged in',{'username': None}, 401
+        logger.info("User is not logged in.")
     
     response = HttpResponse(message=message, status=status, data=data)
     return make_response(json.dumps(response.__dict__), response.status, getResponseHeaders())

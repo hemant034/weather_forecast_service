@@ -2,6 +2,7 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
+from logger import logger
 from config import *
 from utils import *
 import json
@@ -10,6 +11,7 @@ import csv
 app = Flask(__name__)
 app.config.update(app_config_dict)
 CORS(app)
+
 
 db = SQLAlchemy(app)
 db.init_app(app)
@@ -30,6 +32,7 @@ from routes import User, Country, Forecast
 
 def clear_all_data():
     # Get all tables in the database
+    logger.info("Clearing database tables.")
     tables = db.metadata.tables.keys()
 
     # Iterate through tables and delete all data
@@ -41,6 +44,7 @@ def clear_all_data():
     db.session.commit()
 
 with app.app_context():
+    logger.info("Create database tables.")
     db.create_all()
 
 def add_row_to_db(username, password, email, first_name, last_name):
@@ -68,6 +72,7 @@ def insert_users_to_db():
         # Create a CSV DictReader object
         csv_reader = csv.DictReader(csvfile)
         i = 0
+        logger.info("Adding users to the database table.")
         for row in csv_reader:
             if i >= 0:
                 username, password, full_name = row['username'], row['password'], row['full_name']
@@ -77,11 +82,11 @@ def insert_users_to_db():
                 add_row_to_db(username, password, email, first_name, last_name)
             i+=1
 
-    print('Users added.')
+    logger.info("Users added to the database.")
 
 
 def add_roles():
-    print('Adding Roles')
+    logger.info("Adding roles to the database.")
     try:
         for role_name in role_names:
             existing_role = RoleModel.query.filter_by(role_name=role_name).first()
@@ -93,13 +98,14 @@ def add_roles():
             db.session.add(new_role)
         
         db.session.commit()
-        print('Roles Added!')
+        logger.info("Roles added to the database successfully.")
     except Exception as e:
+        logger.error("Error adding roles in database.")
         print(f"Error adding roles: {e}")
 
 
 def add_super_admin():
-    print('Adding Super Admin')
+    logger.info("Adding super admin role.")
     try:
         super_admin_username = 'super_admin'
         existing_admin = UserModel.query.filter_by(user_name=super_admin_username).first()
@@ -119,8 +125,9 @@ def add_super_admin():
         db.session.add(super_admin_user_role_mapping)
         db.session.commit()
 
-        print(f"Super Admin '{super_admin_username}' added to the database.")
+        logger.info(f"Super Admin '{super_admin_username}' added to the database.")
     except Exception as e:
+        logger.info(f"Error adding Super Admin: {e}")
         print(f"Error adding Super Admin: {e}")
 
 
@@ -129,6 +136,7 @@ def add_admin_users():
 
 
 def init_db(cleanup_db=False):
+    logger.info("Adding roles, super admin role and users to database.")
     if cleanup_db:
         clear_all_data()
     add_roles()

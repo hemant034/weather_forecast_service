@@ -1,9 +1,11 @@
-from flask import Flask, session, request, jsonify
+from flask import Flask, session, request, jsonify, make_response
 from flask_session import Session
-from app import app, db, secret_key
+from app import app, db, secret_key, getResponseHeaders
+from models.HttpResponse import HttpResponse
 from models.UserForecastCount import UserForecastVisit
 from models.CitiesForecastCount import CityVisit
 from models.CountriesForecastCount import CountryVisit
+from logger import logger
 from config import *
 import json
 import requests
@@ -17,11 +19,12 @@ city_country_map = dict()
 
 try:
     with open('data/country_data.json', 'r', encoding='utf-8') as file:
+        logger.info("Fetching data countries data.")
         cities_data = json.load(file)
         country_names = set([city_item['country'] for city_item in cities_data])
         city_country_map = {item['name']: item['country'] for item in cities_data}
-except FileNotFoundError:
-    pass
+except FileNotFoundError as e:
+    logger.error(f'Failed to fetch the data from file : {str(e)}')
 
 Session(app)
 
@@ -70,11 +73,11 @@ def forecast_weather():
     days: int = request.args.get('days')
     api_key = weather_api_key
     url = f'http://api.weatherapi.com/v1/forecast.json?key={api_key}&q={place_name}&days={days}'
-
+    logger.info(f'Fetching forecast for {place_name}')
     try:
         user_id = session.get('user_id')
         response = requests.get(url)
-        response.raise_for_status()  # Raise an exception for 4xx or 5xx errors
+        response.raise_for_status()
         json_data = response.json()
         if place_name in country_names:
             increment_countries_forecast_counter(place_name)
@@ -82,9 +85,18 @@ def forecast_weather():
             increment_cities_forecast_counter(place_name)
             increment_countries_forecast_counter(city_country_map[place_name])
         increment_forecast_user_counter(user_id)
-        return jsonify(json_data)
+        message = f'Forcast for {place_name} fetched successfully'
+        status = 200
+        data = json_data
+        logger.info(f'{message} by {user_id}.')
     except requests.exceptions.RequestException as e:
-        return jsonify({"error": "Please enter valid place name."}), 500
+        message = f'Failed to fetch forecast for {place_name}'
+        status = 500
+        data = {"error": str(e)}
+        logger.error(f"Failed to fetch forecast for {place_name} : {str(e)}")
+    
+    response = HttpResponse(message=message, status=status, data=data)
+    return make_response(json.dumps(response.__dict__), response.status, getResponseHeaders()) 
     
 
 @app.route('/forecast/top_users', methods=['GET'])
@@ -92,6 +104,7 @@ def top_users():
     try:
         # Fetch the top n users based on forecast visit counter
         n: int = request.args.get('n', 1)
+        logger.info(f'Fetching top {n} users using forecast.')
         top_users = (
             db.session.query(UserForecastVisit)
             .order_by(UserForecastVisit.forecast_visit_counter.desc())
@@ -104,10 +117,18 @@ def top_users():
             {'username': user.username, 'forecast_visit_counter': user.forecast_visit_counter}
             for user in top_users
         ]
-
-        return jsonify(result)
+        message = f'Top {n} forecast users fetched successfully.'
+        status = 200
+        data = result
+        logger.info(message)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        message = f'Failed to fetch top {n} forecast users.'
+        status = 500
+        data = {"error": str(e)}
+        logger.error(f'{message} : str(e)')
+        
+    response = HttpResponse(message=message, status=status, data=data)
+    return make_response(json.dumps(response.__dict__), response.status, getResponseHeaders()) 
     
 
 @app.route('/forecast/top_countries', methods=['GET'])
@@ -115,6 +136,7 @@ def top_countries():
     try:
         # Fetch the top n countries based on country visit counter
         n: int = request.args.get('n', 1)
+        logger.info(f'Fetching top {n} countries forecasted.')
         top_countries = (
             db.session.query(CountryVisit)
             .order_by(CountryVisit.country_visit_counter.desc())
@@ -127,16 +149,25 @@ def top_countries():
             {'country_name': country.country_name, 'country_visit_counter': country.country_visit_counter}
             for country in top_countries
         ]
-
-        return jsonify(result)
+        message = f'Top {n} forecasted countries fetched successfully.'
+        status = 200
+        data = result
+        logger.info(message)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        message = f'Failed to fetch top {n} forecasted countries.'
+        status = 500
+        data = {"error": str(e)}
+        logger.error(f'{message} : str(e)')
+
+    response = HttpResponse(message=message, status=status, data=data)
+    return make_response(json.dumps(response.__dict__), response.status, getResponseHeaders()) 
     
 
 @app.route('/forecast/top_cities', methods=['GET'])
 def top_cities():
     try:
         n: int = request.args.get('n', 1)
+        logger.info(f'Fetching top {n} cities forecasted.')
         # Fetch the top n cities based on city visit counter
         top_cities = (
             db.session.query(CityVisit)
@@ -150,7 +181,15 @@ def top_cities():
             {'city_name': city.city_name, 'city_visit_counter': city.city_visit_counter}
             for city in top_cities
         ]
-
-        return jsonify(result)
+        message = f'Top {n} forecasted cities fetched successfully.'
+        status = 200
+        data = result
+        logger.info(message)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        message = f'Failed to fetch top {n} forecasted cities.'
+        status = 500
+        data = {"error": str(e)}
+        logger.error(f'{message} : str(e)')
+    
+    response = HttpResponse(message=message, status=status, data=data)
+    return make_response(json.dumps(response.__dict__), response.status, getResponseHeaders()) 
