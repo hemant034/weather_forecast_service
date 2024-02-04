@@ -147,7 +147,7 @@ init_db()
 
 @app.route('/')
 def ping():  # put application's code here
-    return 'pong'
+    return 'Welcome to weather forecast application.'
 
 
 if __name__ == '__main__':
